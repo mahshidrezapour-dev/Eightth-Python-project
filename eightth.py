@@ -13,11 +13,15 @@ from datetime import datetime , timedelta
 
 def books(title=None):
     if title is None:
-        title = input("title : ").strip().casefold()
-        while not title:
-            print("title cannot be empty")
-            title=input("title:").strip().casefold()
+        title = input("title : ")
+    title=title.strip().casefold()
+    while not title:
+        print("title cannot be empty")
+        title=input("title:").strip().casefold()
     author = input("author : ").strip().casefold()
+    while not author:
+        print("author cannot be empty")
+        author=input("author : ").strip().casefold()
     while True:
         try:
             year = int(input("year of publish : "))
@@ -26,20 +30,22 @@ def books(title=None):
             print("please enter a valid publication year")
         except ValueError:
             print("please enter a valid integer")
-    available = True
-    borrow_count=0.strip().casefold()
+
     list_of_books = {
         "title": title,
         "author": author,
         "year": year,
-        "available": available,
-        "borrow_count":borrow_count
+        "available": True,
+        "borrow_count":0
     }
     return list_of_books
 
 
 def borrow():
     name = input("enter your name : ").strip()
+    while not name:
+        print("name cannot be empty")
+        name=input("enter yout name : ").strip()
     while True:
         try:
             deadline = int(input("how many days do you want to keep this book ?  : "))
@@ -88,7 +94,7 @@ def return_book():
 def show_history():
     if not borrow_history:
         print("no borrowing history")
-    return
+        return
     for record in borrow_history:
         print("-"*30)
         print("book : ", record["title"])
@@ -132,33 +138,34 @@ while True:
     elif behavior.lower() == "search":
         question = input("based on what are you searching ? title / author / year ? ").strip().casefold()
         found = False
-        if question.lower()== "title":
+        if question== "title":
             q = input("what title are you looking for ?  >>>>").strip().casefold()
             if q in all_books:
                     print(all_books[q])
                     found = True
 
-        elif question.lower()== "author":
+        elif question== "author":
             e = input("what author areyou looking for ? >>> ").strip().casefold()
-            for book in all_books.values:
-                if book["author"].strip().casefold() == e:
+            for book in all_books.values():
+                if book["author"] == e:
                     print(book)
                     found = True
-        elif question.lower() == "year":
+        elif question== "year":
             try:
                 r = int(input("what yea are you looking for? >>> "))
-                for book in all_books:
+                for book in all_books.values():
                     if book["year"] == r:
                         print(book)
                         found = True
             except ValueError:
                 print("please enter a valid year")
-                found=True
+                
         else:
             print("invalid search option")
             found=True
-        if not foud:
+        if not found:
             print("no matching books found")
+            
     elif behavior== "delete":
         v = input("what book do you want to delete ? >>> ").strip().casefold()
         if v not in all_books:
@@ -166,43 +173,43 @@ while True:
         elif not all_books[v]["available"]:
             print("this book is currently borrowed and cannot be deleted")
         else:
-            delall_books[v]
+            del all_books[v]
             print("book deleted successfully")
     elif behavior== "borrow":
-        borrowing = borrow()
-        if not borrowing["name"] or not borrowing["sign"] or not borrowing["address"] or not borrowing["phone"]:
-            print("all borrower information is required")
-            continue
-            y = input("what book do you want to borrow ? >>>").strip().casefold()
-            if y not in all_books:
-                print("book not found")
-            elif not all_books[y]["available"]:
-                print("this book is not available")
+        y = input("what book do you want to borrow ? >>>").strip().casefold()
+        if y not in all_books:
+            print("book not found")
+        elif not all_books[y]["available"]:
+            print("this book is not available")
+        else:
+            borrowing = borrow()
+            if (not borrowing["name"] or not borrowing["sign"] or not borrowing["address"] or not borrowing["phone"]):
+                print("all borrower information is required")
+                continue
+            o = input("are you sure you want to borrow this book ? ").strip().casefold()
+            if o in ["yes", "y", "yeah"]:
+                borrowing["title"]=y
+                all_books[y]["borrow_count"]+=1
+                all_books[y]["borrower"]=borrowing
+                all_books[y]["available"]=False
+                borrow_history.append(borrowing)
+                print("you should return this book within",borrowing["deadline"], "days")
+                print("the book ",y,"has been borrowed")
             else:
-                o = input("are you sure you want to borrow this book ? ").strip().casefold()
-                    if o in ["yes", "y", "yeah"]:
-                        borrowing["title"]=y
-                        all_books[y]["borrow_count"]+=1
-                        all_books[y]["borrower"]=borrowing
-                        all_books[y]["available"]=False
-                        borrow_history.append(borrowing)
-                        print("you should return this book within",borrowing["deadline"], "days")
-                        print("the book ",y,"has been borrowed")
-                    else:
-                        print("borrowing cancelled")
+                print("borrowing cancelled")
     elif behavior== "return":
         returning = return_book()
-        bookname=returning["bookname]
+        bookname=returning["bookname"]
         if bookname not in all_books:
             print("book not found")
             continue
-        book=all_books["bookname"]
+        book=all_books[bookname]
         if book["available"]:
             print("this book has not been borrowed")
             continue
         borrowing=book["borrower"]
-        if( returning["name"].casefold() == borrowing["name"].casefold() and  and returning["sign"] == borrowing["sign"] ):
-            deadline_date= returning["date_of_return"]+ timedelta(days=borrowing["deadline"])  
+        if( returning["name"].casefold() == borrowing["name"].casefold()  and returning["sign"] == borrowing["sign"] ):
+            deadline_date= borrowing["date_of_borrow"]+ timedelta(days=borrowing["deadline"])  
             late_days=max(0,(returning["date_of_return"].date()-deadline_date.date()).days)
             book["available"] = True
             borrowing["date_of_return"]=returning["date_of_return"]
@@ -217,7 +224,7 @@ while True:
     elif behavior=="history":
         show_history()
     elif behavior=="borrow count":
-        k=input("for what book's history are you looking for ? >>> ")
+        k=input("for what book's history are you looking for ? >>> ").strip().casefold()
         found=False
         for book in all_books:
             
